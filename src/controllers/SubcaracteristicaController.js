@@ -26,26 +26,20 @@ router.get('/', async (req, res) => {
     }
 });
 
-const removeDuplicates = (array) => {
-    // Diccionario para rastrear IDs únicos
-    const uniqueMap = new Map();
-    const uniqueArray = [];
-
-    array.forEach(item => {
-        // Convierte el ID a cadena para comparación
-        const itemId = item._id.toString(); // Asegúrate de que `_id` esté en formato de cadena
-
-        // Verifica si el ID ya está en el mapa
-        if (!uniqueMap.has(itemId)) {
-            uniqueMap.set(itemId, true);
-            uniqueArray.push(item);
+// Función para eliminar duplicados por id y nombre entre diferentes subcaracterísticas
+const removeDuplicatesGlobally = (array, globalSet) => {
+    return array.filter(item => {
+        const uniqueKey = `${item._id.toString()}-${item.nombre}`;
+        console.log(`Evaluando item con uniqueKey: ${uniqueKey}`); // Log para ver la clave única
+        if (globalSet.has(uniqueKey)) {
+            console.log(`Duplicado global encontrado: ${uniqueKey}`); // Log si se encuentra un duplicado global
+            return false;
         }
+        globalSet.add(uniqueKey);
+        return true;
     });
-
-    return uniqueArray;
 };
 
-// Ejemplo de uso con tu código
 router.get('/all', async (req, res) => {
     try {
         // Recupera todas las subcaracterísticas con métricas anidadas
@@ -57,25 +51,29 @@ router.get('/all', async (req, res) => {
                     path: 'pautas'
                 }
             }
-        });
+        }).lean(); // Convierte los documentos de Mongoose a objetos JavaScript planos
+
+        console.log(`Subcaracterísticas recuperadas: ${JSON.stringify(subcaracteristicas, null, 2)}`); // Log para ver los datos recuperados
         
-        // Procesa las subcaracterísticas para eliminar métricas duplicadas
+        // Set global para rastrear métricas únicas entre todas las subcaracterísticas
+        const globalUniqueSet = new Set();
+
+        // Procesa las subcaracterísticas para eliminar métricas duplicadas globalmente
         const uniqueSubcaracteristicas = subcaracteristicas.map(subcaracteristica => {
-            const uniqueMetricas = removeDuplicates(subcaracteristica.metricas);
-            const unique2Metricas = removeDuplicates(uniqueMetricas)
+            const uniqueMetricas = removeDuplicatesGlobally(subcaracteristica.metricas, globalUniqueSet);
+            console.log(`Métricas únicas para subcaracterística ${subcaracteristica._id}: ${JSON.stringify(uniqueMetricas, null, 2)}`); // Log para ver las métricas únicas
             return {
-                ...subcaracteristica.toObject(),
-                metricas: unique2Metricas,
+                ...subcaracteristica,
+                metricas: uniqueMetricas
             };
         });
 
         res.status(200).json(uniqueSubcaracteristicas);
     } catch (error) {
+        console.error(`Error al obtener subcaracterísticas: ${error.message}`); // Log para errores
         res.status(500).json({ message: 'Error al obtener subcaracterísticas', error });
     }
 });
-
-
 
 // Get a single Subcaracteristica by ID
 router.get('/:id', async (req, res) => {
@@ -108,7 +106,7 @@ router.get('/one/:id', async (req, res) => {
                     path: 'pautas'
                 }
             }
-        });
+        }).lean(); 
 
         // Comprobar si el documento fue encontrado
         if (!subcaracteristica) {
