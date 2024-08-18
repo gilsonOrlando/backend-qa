@@ -51,7 +51,7 @@ router.get('/promedios/:id', async (req, res) => {
                 if (data.count > 0) {
                     const promedio = data.sum / data.count;
                     calculos.push({
-                        nombre: `Lista de Verificación ${data.nombre}`,
+                        nombre: `${data.nombre}`,
                         promedio
                     });
                     totalSum += data.sum;
