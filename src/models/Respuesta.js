@@ -8,7 +8,8 @@ const RespuestaSchema = new mongoose.Schema({
     respuestas: [{
         pautaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pauta', required: false },
         listaVerificacion: { type: mongoose.Schema.Types.ObjectId, ref: 'ListaVerificacion' }, // Agregado
-        valor: { type: Number, required: false }
+        valor: { type: Number, required: false },
+        comentario: { type: String, required: false }
     }],
     nombre: { type: String, required: true }
 });
