@@ -8,7 +8,6 @@ const SubcaracteristicaController = require('../controllers/SubcaracteristicaCon
 const ProyectoController = require('../controllers/ProyectoController');
 const RespuestaController = require('../controllers/RespuestaController');
 const calculosController = require('../controllers/CalculosController')
-const configuracionController = require('../controllers/ConfiguracionController');
 
 router.use('/pautas', PautaController);
 router.use('/listasVerificacion', ListaVerificacionController);
@@ -17,6 +16,5 @@ router.use('/subcaracteristicas', SubcaracteristicaController);
 router.use('/proyectos', ProyectoController);
 router.use('/respuestas', RespuestaController);
 router.use('/calculos', calculosController)
-router.use('/configuraciones',configuracionController)
 
 module.exports = router;

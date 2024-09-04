@@ -11,7 +11,8 @@ const RespuestaSchema = new mongoose.Schema({
         valor: { type: Number, required: false },
         comentario: { type: String, required: false }
     }],
-    nombre: { type: String, required: true }
+    nombre: { type: String, required: true },
+    intentos: { type: Number, default: 0 }
 });
 
 module.exports = mongoose.model('Respuesta', RespuestaSchema);

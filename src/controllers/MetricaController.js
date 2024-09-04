@@ -25,6 +25,25 @@ router.get('/', async (req, res) => {
     }
 });
 
+// Get all Subcaracteristicas except for the given list of IDs
+router.get('/excluir', async (req, res) => {
+    try {
+        // Obtener los IDs a excluir del parámetro de consulta
+        const excludeIds = req.query.excludeIds;
+
+        // Si se proporcionan IDs para excluir, crear un filtro, de lo contrario obtener todas
+        const filter = excludeIds ? { _id: { $nin: excludeIds.split(',') } } : {};
+
+        // Buscar las subcaracterísticas con el filtro y popular las métricas asociadas
+        const metricas = await Metrica.find(filter).populate('listaVerificacion');
+        
+        res.json(metricas);
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+
 // Función para eliminar duplicados por id y nombre entre diferentes subcaracterísticas
 const removeDuplicatesGlobally = (array, globalSet) => {
     return array.filter(item => {
@@ -64,7 +83,7 @@ router.get('/all', async (req, res) => {
     }
 });
 
-
+/*
 router.get('/one/:id', async (req, res) => {
     const { id } = req.params;
 
@@ -75,6 +94,33 @@ router.get('/one/:id', async (req, res) => {
 
     try {
         const metrica = await Metrica.findById(id).populate({
+            path: 'listaVerificacion',
+            populate: {
+                path: 'pautas'
+            }
+        }).lean();
+
+        if (!metrica) {
+            return res.status(404).json({ message: 'Métrica no encontrada' });
+        }
+
+        res.status(200).json(metrica);
+    } catch (error) {
+        res.status(500).json({ message: 'Error al obtener métrica', error });
+    }
+})
+*/
+
+router.get('/one/:id', async (req, res) => {
+    const ids = req.params.id.split(',');
+
+    // Verificar si los IDs son ObjectId válidos
+    if (!ids.every(id => mongoose.Types.ObjectId.isValid(id))) {
+        return res.status(400).json({ message: 'Uno o más IDs son inválidos' });
+    }
+
+    try {
+        const metrica = await Metrica.find({ _id: { $in: ids } }).populate({
             path: 'listaVerificacion',
             populate: {
                 path: 'pautas'

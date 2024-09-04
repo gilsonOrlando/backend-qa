@@ -5,7 +5,7 @@ const Respuesta = require('../models/Respuesta');
 
 router.post('/guardar-respuestas', async (req, res) => {
     try {
-        const { proyectoId, tipo, subcaracteristicaId, metricaId, respuestas, nombre } = req.body;
+        const { proyectoId, tipo, subcaracteristicaId, metricaId, respuestas, nombre, intentos } = req.body;
 
         const nuevaRespuesta = new Respuesta({
             proyectoId,
@@ -13,7 +13,8 @@ router.post('/guardar-respuestas', async (req, res) => {
             subcaracteristicaId,
             metricaId,
             respuestas,
-            nombre // Guardar el nombre de la respuesta
+            nombre, // Guardar el nombre de la respuesta
+            intentos
         });
 
         await nuevaRespuesta.save();
@@ -29,7 +30,7 @@ router.get('/:id', async (req, res) => {
         const { id } = req.params;
 
         // Buscar respuestas por el ID del proyecto
-        const respuestas = await Respuesta.find({ proyectoId: id }).select('nombre');
+        const respuestas = await Respuesta.find({ proyectoId: id });
 
         if (!respuestas.length) {
             return res.status(404).json({ message: 'No se encontraron respuestas para este proyecto' });
