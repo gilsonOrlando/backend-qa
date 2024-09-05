@@ -141,7 +141,7 @@ router.get('/one/:id', async (req, res) => {
     }
 });
 */
-/*
+
 router.get('/one/:id', async (req, res) => {
     const ids = req.params.id.split(',');
 
@@ -163,7 +163,7 @@ router.get('/one/:id', async (req, res) => {
         }).lean();
 
         // Comprobar si se encontraron los documentos
-        if (!subcaracteristicas || subcaracteristicas.length === 0) {
+        if (!subcaracteristicas) {
             return res.status(404).json({ message: 'Subcaracterística(s) no encontrada(s)' });
         }
 
@@ -174,8 +174,8 @@ router.get('/one/:id', async (req, res) => {
         res.status(500).json({ message: 'Error al obtener subcaracterística', error });
     }
 });
-*/
 
+/*
 router.get('/one/:id', async (req, res) => {
     const ids = req.params.id.split(',');
 
@@ -254,7 +254,7 @@ router.get('/one/:id', async (req, res) => {
         res.status(500).json({ message: 'Error al obtener subcaracterística', error });
     }
 });
-
+*/
 
 // Update a Subcaracteristica by ID
 router.put('/:id', async (req, res) => {

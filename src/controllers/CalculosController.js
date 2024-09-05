@@ -25,13 +25,14 @@ router.get('/promedios/:id', async (req, res) => {
         let totalSum = 0;
         let totalCount = 0;
 
-        if (respuesta.tipo === 'allSubcaracteristicas' || respuesta.tipo === 'singleSubcaracteristica' || respuesta.tipo === 'allMetricas' || respuesta.tipo === 'singleMetrica' ) {
+        if (respuesta.tipo === 'allSubcaracteristicas' || respuesta.tipo === 'singleSubcaracteristica' || respuesta.tipo === 'allMetricas' || respuesta.tipo === 'singleMetrica') {
             const listaVerificaciones = {};
 
             // Agrupar las respuestas por lista de verificación
             for (const pauta of respuesta.respuestas) {
                 const pautaId = pauta.pautaId; // Obtenemos la pauta
                 const valor = pauta.valor || 0;
+                const comentario = pauta.comentario || 'Sin comentario'; // Agregar el comentario de la pauta
 
                 // Asegurarnos de que la pauta y lista de verificación están cargadas
                 if (!pautaId || !pauta.listaVerificacion) continue;
@@ -39,11 +40,15 @@ router.get('/promedios/:id', async (req, res) => {
                 const listaVerificacion = pauta.listaVerificacion;
 
                 if (!listaVerificaciones[listaVerificacion._id]) {
-                    listaVerificaciones[listaVerificacion._id] = { sum: 0, count: 0, nombre: listaVerificacion.nombre };
+                    listaVerificaciones[listaVerificacion._id] = { sum: 0, count: 0, nombre: listaVerificacion.nombre, comentarios: [] };
                 }
 
                 listaVerificaciones[listaVerificacion._id].sum += valor;
                 listaVerificaciones[listaVerificacion._id].count += 1;
+                listaVerificaciones[listaVerificacion._id].comentarios.push({
+                    pregunta: pautaId.pregunta,
+                    comentario
+                });
             }
 
             // Calcular promedio por cada lista de verificación
@@ -52,7 +57,8 @@ router.get('/promedios/:id', async (req, res) => {
                     const promedio = data.sum / data.count;
                     calculos.push({
                         nombre: `${data.nombre}`,
-                        promedio
+                        promedio,
+                        comentarios: data.comentarios
                     });
                     totalSum += data.sum;
                     totalCount += data.count;
@@ -63,7 +69,7 @@ router.get('/promedios/:id', async (req, res) => {
         // Agregar el promedio total
         if (totalCount > 0) {
             const promedioTotal = totalSum / totalCount;
-            calculos.push({ nombre: 'Promedio Total', promedio: promedioTotal });
+            calculos.push({ nombre: 'Promedio Total', promedio: promedioTotal, comentarios: [] });
         }
 
         console.log('Cálculos calculados:', calculos);
