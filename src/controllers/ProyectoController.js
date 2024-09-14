@@ -5,7 +5,8 @@ const Proyecto = require('../models/Proyecto');
 // Create a new Proyecto
 router.post('/', async (req, res) => {
     try {
-        const newProyecto = new Proyecto(req.body);
+        const { nombre, link, idPersona } = req.body;
+        const newProyecto = new Proyecto({ nombre, link, idPersona });
         const proyecto = await newProyecto.save();
         res.json(proyecto);
     } catch (err) {
@@ -17,6 +18,15 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         const proyectos = await Proyecto.find();
+        res.json(proyectos);
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+router.get('/persona/:idPersona', async (req, res) => {
+    try {
+        const proyectos = await Proyecto.find({ idPersona: req.params.idPersona });
         res.json(proyectos);
     } catch (err) {
         res.status(500).send(err.message);
