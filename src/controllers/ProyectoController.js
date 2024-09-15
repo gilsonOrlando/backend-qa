@@ -5,8 +5,17 @@ const Proyecto = require('../models/Proyecto');
 // Create a new Proyecto
 router.post('/', async (req, res) => {
     try {
-        const { nombre, link, idPersona } = req.body;
-        const newProyecto = new Proyecto({ nombre, link, idPersona });
+        const { nombre, link, idPersona, branch, githubtoken } = req.body;
+        
+        // Crear un nuevo proyecto con los campos correspondientes
+        const newProyecto = new Proyecto({
+            nombre,
+            link,
+            idPersona,
+            branch,         // Añadir branch al proyecto
+            githubtoken     // Añadir githubtoken al proyecto
+        });
+        
         const proyecto = await newProyecto.save();
         res.json(proyecto);
     } catch (err) {
@@ -24,6 +33,7 @@ router.get('/', async (req, res) => {
     }
 });
 
+// Get all Proyectos by Persona ID
 router.get('/persona/:idPersona', async (req, res) => {
     try {
         const proyectos = await Proyecto.find({ idPersona: req.params.idPersona });
@@ -49,11 +59,24 @@ router.get('/:id', async (req, res) => {
 // Update a Proyecto by ID
 router.put('/:id', async (req, res) => {
     try {
-        const proyecto = await Proyecto.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!proyecto) {
+        const { nombre, link, branch, githubtoken } = req.body;
+
+        // Actualizar proyecto con los nuevos campos si están presentes
+        const updatedProyecto = await Proyecto.findByIdAndUpdate(
+            req.params.id,
+            {
+                ...(nombre && { nombre }),
+                ...(link && { link }),
+                ...(branch && { branch }),            // Actualizar branch si está en el request
+                ...(githubtoken && { githubtoken })   // Actualizar githubtoken si está en el request
+            },
+            { new: true }
+        );
+
+        if (!updatedProyecto) {
             return res.status(404).send('Proyecto not found');
         }
-        res.json(proyecto);
+        res.json(updatedProyecto);
     } catch (err) {
         res.status(500).send(err.message);
     }

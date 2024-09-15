@@ -5,8 +5,8 @@ const cookieParser = require('cookie-parser');
 const ngrok = require('ngrok');
 
 // URL base de SonarQube
-const SONARQUBE_URL = 'https://sonarcloud.io';
-let sonarQubeSessionToken = 'bda650c195bd537f57431c78763720da67937d7d';
+const SONARQUBE_URL = 'http://localhost:9000';
+let sonarQubeSessionToken = '';
 
 // Configurar el middleware para manejar cookies
 router.use(cookieParser());
@@ -20,18 +20,22 @@ const checkAuth = (req, res, next) => {
 };
 
 // Login a SonarQube
-router.get('/login', async (req, res) => {
+router.post('/login', async (req, res) => {
+    const { login, password } = req.body;
 
     try {
-        const response = await axios.get(`${SONARQUBE_URL}/api/authentication/validate`, null, {
+        const response = await axios.post(`${SONARQUBE_URL}/api/authentication/login`, null, {
+            params: { login, password },
             headers: { 'Content-Type': 'application/json' }
         });
 
         if (response.status === 200) {
+           
+            
 
             // Obtener el token de la respuesta, si está disponible
             sonarQubeSessionToken = `Bearer ${response.data.token}`; // Ajusta según cómo obtengas el token
-            console.log(sonarQubeSessionToken)
+
             return res.status(200).json({ message: 'Login successful' });
         } else {
             return res.status(401).json({ message: 'Login failed' });
@@ -45,9 +49,11 @@ router.get('/login', async (req, res) => {
 // Obtener todas las metricKeys de SonarQube
 router.get('/metrics', checkAuth, async (req, res) => {
     try {
-        const response = await axios.get(`${SONARQUBE_URL}/api/metrics/search`, null, {
+        const response = await axios.get(`${SONARQUBE_URL}/api/metrics/search`, {
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': sonarQubeSessionToken,
+                'Cookie': req.headers.cookie
             }
         });
 
@@ -72,6 +78,8 @@ router.get('/measures', checkAuth, async (req, res) => {
             params: { component, metricKeys },
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': sonarQubeSessionToken,
+                'Cookie': req.headers.cookie  // Pasa las cookies desde la solicitud del cliente
             }
         });
 
@@ -85,39 +93,5 @@ router.get('/measures', checkAuth, async (req, res) => {
         return res.status(500).json({ message: 'Error fetching measures', error: error.message });
     }
 });
-
-// Crear un nuevo proyecto en SonarCloud
-router.post('/proyectos/crear', checkAuth, async (req, res) => {
-    const { nombreProyecto } = req.body;
-
-    // Crear el key del proyecto siguiendo la estructura gilsonOrlando_nombreProyecto
-    const keyProyecto = `gilsonOrlando_${nombreProyecto}`;
-
-    try {
-        // Realizar la solicitud a SonarCloud para crear el proyecto
-        const response = await axios.post(`${SONARQUBE_URL}/api/projects/create`, null, {
-            params: {
-                name: nombreProyecto,
-                organization: 'gilsonorlando', // Organización fija
-                project: keyProyecto,
-                visibility: 'public' // Puedes cambiar a 'private' si es necesario
-            },
-            headers: {
-                'Authorization': sonarQubeSessionToken, // Asegúrate de que el token esté configurado correctamente
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        });
-
-        if (response.status === 200) {
-            return res.status(200).json({ message: 'Proyecto creado exitosamente', data: response.data });
-        } else {
-            return res.status(400).json({ message: 'Error al crear el proyecto', error: response.data });
-        }
-    } catch (error) {
-        console.error('Error al crear el proyecto:', error);
-        return res.status(500).json({ message: 'Error al crear el proyecto', error: error.message });
-    }
-});
-
 
 module.exports = router;
