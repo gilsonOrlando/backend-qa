@@ -19,6 +19,7 @@ const checkAuth = (req, res, next) => {
     next();
 };
 
+
 // Login a SonarQube
 router.get('/login', async (req, res) => {
 
@@ -41,6 +42,26 @@ router.get('/login', async (req, res) => {
         return res.status(500).json({ message: 'Error during login', error: error.message });
     }
 });
+
+
+router.post('/rename', async (req, res) => {
+    const { name, project } = req.query;
+    try {
+        const response = await axios.post(`${SONARQUBE_URL}/api/project_branches/rename`, null, {
+            params: { name, project},
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }
+        );
+        if (response.status === 204){
+            return res.status(200).json({ message: 'Rename Change Successfully' })
+        }
+    } catch (error) {
+        return res.status(500).json({ message: 'Error Rename Change' })
+    }
+}
+)
 
 // Obtener todas las metricKeys de SonarQube
 router.get('/metrics', checkAuth, async (req, res) => {
