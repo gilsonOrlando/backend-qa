@@ -43,7 +43,6 @@ router.get('/login', async (req, res) => {
     }
 });
 
-
 router.post('/rename', async (req, res) => {
     const { name, project } = req.body;
     console.log('nombre'+name)
@@ -66,6 +65,7 @@ router.post('/rename', async (req, res) => {
         }
     } catch (error) {
         return res.status(500).json({ message: 'Error Rename Change', error })
+
     }
 }
 )
