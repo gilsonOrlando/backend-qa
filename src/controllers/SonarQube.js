@@ -45,20 +45,27 @@ router.get('/login', async (req, res) => {
 
 
 router.post('/rename', async (req, res) => {
-    const { name, project } = req.query;
+    const { name, project } = req.body;
+    console.log('nombre'+name)
+    console.log('proyecto'+project)
+    const keyProyecto = `gilsonOrlando_${project}`;
     try {
         const response = await axios.post(`${SONARQUBE_URL}/api/project_branches/rename`, null, {
-            params: { name, project},
+            params: { 
+                name: name, 
+                project: keyProyecto
+            },
             headers: {
-                'Content-Type': 'application/json',
+                'Authorization': 'Bearer 304b8ac9ea8cfb88084de6f21609e4ccf9068126',
+                'Content-Type': 'application/json'
             }
-        }
-        );
+        });
         if (response.status === 204){
+            console.log('rename successfully')
             return res.status(200).json({ message: 'Rename Change Successfully' })
         }
     } catch (error) {
-        return res.status(500).json({ message: 'Error Rename Change' })
+        return res.status(500).json({ message: 'Error Rename Change', error })
     }
 }
 )
