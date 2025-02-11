@@ -93,5 +93,43 @@ router.get('/measures', checkAuth, async (req, res) => {
         return res.status(500).json({ message: 'Error fetching measures', error: error.message });
     }
 });
+// Obtener problemas relacionados con métricas específicas en SonarQube
+router.get('/issues', checkAuth, async (req, res) => {
+    const { component } = req.query;
+    const metricKeys = ['duplicated_lines', 'lines_to_cover', 'complexity', 'code_smells', 'cognitive_complexity', 'comment_lines_density'];
+
+    try {
+        const response = await axios.get(`${SONARQUBE_URL}/api/issues/search`, {
+            params: {
+                componentKeys: component,
+                types: 'BUG,CODE_SMELL,VULNERABILITY', // Buscar diferentes tipos de problemas
+                ps: 100 // Cantidad de resultados por página
+            },
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.status === 200) {
+            const issues = response.data.issues.map(issue => ({
+                key: issue.key,
+                rule: issue.rule,
+                severity: issue.severity,
+                message: issue.message,
+                component: issue.component,
+                line: issue.line,
+                metric: metricKeys.find(m => issue.message.includes(m)) || 'unknown'
+            }));
+
+            return res.status(200).json({ message: 'Issues fetched successfully', issues });
+        } else {
+            return res.status(401).json({ message: 'Failed to fetch issues' });
+        }
+    } catch (error) {
+        console.error('Error fetching issues:', error);
+        return res.status(500).json({ message: 'Error fetching issues', error: error.message });
+    }
+});
+
 
 module.exports = router;

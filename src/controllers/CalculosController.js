@@ -11,7 +11,7 @@ router.get('/promedios/:id', async (req, res) => {
 
         // Obtener la respuesta específica por ID
         const respuesta = await Respuesta.findById(id)
-            .populate('respuestas.pautaId', 'descripcion pregunta') // Cargar campos necesarios de Pauta
+            .populate('respuestas.pautaId', 'descripcion pregunta nivelesCumplimiento') // Cargar campos necesarios de Pauta
             .populate('respuestas.listaVerificacion', 'nombre'); // Cargar campos necesarios de ListaVerificacion
 
         // Depuración: Verificar la respuesta obtenida
@@ -38,6 +38,10 @@ router.get('/promedios/:id', async (req, res) => {
                 if (!pautaId || !pauta.listaVerificacion) continue;
 
                 const listaVerificacion = pauta.listaVerificacion;
+                const nivelCumplimiento = pautaId.nivelesCumplimiento.find(nc => nc.valor === valor);
+                const nivelCumplimientoDescripcion = nivelCumplimiento?.descripcion || 'Nivel desconocido';    
+                console.log(nivelCumplimiento)
+                console.log(nivelCumplimientoDescripcion)           
 
                 if (!listaVerificaciones[listaVerificacion._id]) {
                     listaVerificaciones[listaVerificacion._id] = { sum: 0, count: 0, nombre: listaVerificacion.nombre, comentarios: [] };
@@ -47,6 +51,7 @@ router.get('/promedios/:id', async (req, res) => {
                 listaVerificaciones[listaVerificacion._id].count += 1;
                 listaVerificaciones[listaVerificacion._id].comentarios.push({
                     pregunta: pautaId.pregunta,
+                    respuesta: nivelCumplimientoDescripcion,
                     comentario
                 });
             }
@@ -57,6 +62,7 @@ router.get('/promedios/:id', async (req, res) => {
                     const promedio = data.sum / data.count;
                     calculos.push({
                         nombre: `${data.nombre}`,
+                        valor: data.valor,
                         promedio,
                         comentarios: data.comentarios
                     });

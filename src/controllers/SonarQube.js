@@ -45,13 +45,13 @@ router.get('/login', async (req, res) => {
 
 router.post('/rename', async (req, res) => {
     const { name, project } = req.body;
-    console.log('nombre'+name)
-    console.log('proyecto'+project)
+    console.log('nombre' + name)
+    console.log('proyecto' + project)
     const keyProyecto = `gilsonOrlando_${project}`;
     try {
         const response = await axios.post(`${SONARQUBE_URL}/api/project_branches/rename`, null, {
-            params: { 
-                name: name, 
+            params: {
+                name: name,
                 project: keyProyecto
             },
             headers: {
@@ -59,7 +59,7 @@ router.post('/rename', async (req, res) => {
                 'Content-Type': 'application/json'
             }
         });
-        if (response.status === 204){
+        if (response.status === 204) {
             console.log('rename successfully')
             return res.status(200).json({ message: 'Rename Change Successfully' })
         }
@@ -114,6 +114,43 @@ router.get('/measures', checkAuth, async (req, res) => {
     }
 });
 
+router.get('/measures/component_tree', checkAuth, async (req, res) => {
+    const { component, metricKeys } = req.query;
+
+    console.log(req.headers.cookie);  // Esto puede ayudarte a verificar que la autenticación funciona correctamente.
+
+    try {
+        // Realizamos la solicitud al endpoint component_tree de SonarQube
+        const response = await axios.get(`${SONARQUBE_URL}/api/measures/component_tree`, {
+            params: { component, metricKeys },
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        // Verificamos si la respuesta fue exitosa
+        if (response.status === 200) {
+            // Si todo está bien, respondemos con los datos obtenidos
+            return res.status(200).json({
+                message: 'Component tree measures fetched successfully',
+                data: response.data,
+            });
+        } else {
+            // Si no fue exitoso, respondemos con un error
+            return res.status(401).json({
+                message: 'Failed to fetch component tree measures',
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching component tree measures:', error);
+        // Si ocurrió un error, respondemos con el mensaje de error
+        return res.status(500).json({
+            message: 'Error fetching component tree measures',
+            error: error.message,
+        });
+    }
+});
+
 // Crear un nuevo proyecto en SonarCloud
 router.post('/proyectos/crear', checkAuth, async (req, res) => {
     const { nombreProyecto } = req.body;
@@ -138,6 +175,7 @@ router.post('/proyectos/crear', checkAuth, async (req, res) => {
 
         if (response.status === 200) {
             return res.status(200).json({ message: 'Proyecto creado exitosamente', data: response.data });
+            response = null;
         } else {
             return res.status(400).json({ message: 'Error al crear el proyecto', error: response.data });
         }
@@ -147,5 +185,93 @@ router.post('/proyectos/crear', checkAuth, async (req, res) => {
     }
 });
 
+router.get('/issues', checkAuth, async (req, res) => {
+    const { projectKey } = req.query; // Se espera recibir el projectKey como parámetro en la URL
+
+    if (!projectKey) {
+        return res.status(400).json({ message: 'Se requiere el parámetro projectKey' });
+    }
+
+    try {
+        const response = await axios.get(`${SONARQUBE_URL}/api/issues/search`, {
+            params: { componentKeys: projectKey },
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.status === 200) {
+            const issues = response.data.issues.map(issue => ({
+                archivo: issue.component,
+                linea: issue.line || 'No especificado',
+                regla: issue.rule,
+                severidad: issue.severity,
+                descripcion: issue.message,
+                estado: issue.status,
+                tipo: issue.type,
+                tiempo_estimado: issue.effort,
+                categoria: issue.tags || 'No disponible',
+                linea_afectada: issue.textRange
+            }));
+
+            return res.status(200).json({ message: 'Issues obtenidos correctamente', issues });
+        } else {
+            return res.status(400).json({ message: 'Error al obtener issues' });
+        }
+    } catch (error) {
+        console.error('Error al obtener issues:', error);
+        return res.status(500).json({ message: 'Error al obtener issues', error: error.message });
+    }
+});
+
+// Obtener el contenido en bruto (raw) de un archivo fuente en SonarQube
+router.get('/raw', checkAuth, async (req, res) => {
+    const { key } = req.query; // Se espera recibir el parámetro "key" del archivo
+
+    if (!key) {
+        return res.status(400).json({ message: 'Se requiere el parámetro key' });
+    }
+    console.log(`Obteniendo raw data para la clave: ${key}`);
+
+    try {
+        const response = await axios.get(`${SONARQUBE_URL}/api/sources/raw`, {
+            params: { key },
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        console.log(`Respuesta de SonarQube: ${response.status}`);
+
+        if (response.status === 200) {
+            return res.status(200).json({ message: 'Raw data fetched successfully', rawData: response.data });
+        } else {
+            return res.status(400).json({ message: 'Failed to fetch raw data' });
+        }
+    } catch (error) {
+        console.error('Error fetching raw data:', error);
+        return res.status(500).json({ message: 'Error fetching raw data', error: error.message });
+    }
+});
+
+router.get("/sonar-file", checkAuth, async (req, res) => {
+    console.log("Se recibió una petición a /api/sonarqube/sonar-file con key:", req.query.key);
+
+    const token = "304b8ac9ea8cfb88084de6f21609e4ccf9068126";
+    const fileKey = req.query.key;
+
+    try {
+        const response = await axios.get(`https://sonarcloud.io/api/sources/raw?key=${fileKey}`, {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                
+                  // Asegura que se reciba como texto
+            },
+            responseType: "text",
+        });
+        res.setHeader("Content-Type", "text/plain");
+        res.send(response.data);
+    } catch (error) {
+        console.error("Error en la petición a SonarCloud:", error.response ? error.response.data : error.message);
+        res.status(500).json({ message: "Error al obtener el archivo" });
+    }
+});
 
 module.exports = router;
